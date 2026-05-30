@@ -61,9 +61,11 @@ builder.Services.AddRateLimiter(options =>
 });
 
 // Health Checks
+var pgCs = WLR.Infrastructure.ConnectionStringHelper.NormalizePostgres(builder.Configuration.GetConnectionString("DefaultConnection"));
+var redisCs = WLR.Infrastructure.ConnectionStringHelper.NormalizeRedis(builder.Configuration.GetConnectionString("Redis"));
 builder.Services.AddHealthChecks()
-    .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!)
-    .AddRedis(builder.Configuration.GetConnectionString("Redis")!);
+    .AddNpgSql(pgCs!)
+    .AddRedis(redisCs!);
 
 var app = builder.Build();
 

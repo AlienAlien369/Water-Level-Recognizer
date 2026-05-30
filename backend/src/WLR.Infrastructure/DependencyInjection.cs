@@ -18,16 +18,19 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        var pgConnectionString = ConnectionStringHelper.NormalizePostgres(configuration.GetConnectionString("DefaultConnection"));
+        var redisConnectionString = ConnectionStringHelper.NormalizeRedis(configuration.GetConnectionString("Redis"));
+
         // Database
         services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"),
+            options.UseNpgsql(pgConnectionString,
                 npgsql => npgsql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
         // Redis
         services.AddStackExchangeRedisCache(options =>
-            options.Configuration = configuration.GetConnectionString("Redis"));
+            options.Configuration = redisConnectionString);
 
         services.AddScoped<ICacheService, RedisCacheService>();
 
@@ -79,10 +82,10 @@ public static class DependencyInjection
             };
         });
 
-        // Hangfire
+        // Hangfire — must use key-value connection string (not URL format)
         services.AddHangfire(config =>
             config.UsePostgreSqlStorage(c =>
-                c.UseNpgsqlConnection(configuration.GetConnectionString("DefaultConnection"))));
+                c.UseNpgsqlConnection(pgConnectionString)));
         services.AddHangfireServer();
 
         return services;
