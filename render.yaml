@@ -1,0 +1,48 @@
+services:
+  # Backend Web Service (Docker)
+  - type: web
+    name: wlr-backend
+    runtime: docker
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    dockerCommand: dotnet WLR.API.dll
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://+:8080
+      - key: PORT
+        value: 8080
+      - key: ConnectionStrings__DefaultConnection
+        fromDatabase:
+          name: wlr-postgres
+          property: connectionString
+      - key: ConnectionStrings__Redis
+        fromService:
+          name: wlr-redis
+          type: redis
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ISSUER
+        value: WaterLevelRecognizer
+      - key: JWT_AUDIENCE
+        value: WLRUsers
+      - key: SMS_PROVIDER
+        value: Console
+      - key: ALLOWED_ORIGINS
+        sync: false  # Set manually in Render dashboard to your Vercel URL
+
+  # Redis Cache
+  - type: redis
+    name: wlr-redis
+    plan: free
+    ipAllowList: []
+
+databases:
+  - name: wlr-postgres
+    plan: free
+    databaseName: wlr_db
+    user: wlr_user

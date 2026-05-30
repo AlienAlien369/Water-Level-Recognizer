@@ -1,0 +1,55 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=wlr_db_dev;Username=postgres;Password=postgres;
+      - ConnectionStrings__Redis=redis:6379
+      - JwtSettings__SecretKey=DEV_SECRET_KEY_MIN_32_CHARS_LONG_HERE
+      - JwtSettings__Issuer=WaterLevelRecognizer
+      - JwtSettings__Audience=WLRUsers
+      - SmsSettings__Provider=Console
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend:/src
+      - backend_logs:/app/logs
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: wlr-frontend-dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8080
+      - BACKEND_URL=http://wlr-backend:8080
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:5173"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  postgres:
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: wlr_db_dev
+
+  redis:
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+
+volumes:
+  backend_logs:

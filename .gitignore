@@ -1,0 +1,48 @@
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+
+# Build artifacts
+backend/bin/
+backend/obj/
+backend/src/**/bin/
+backend/src/**/obj/
+backend/tests/**/bin/
+backend/tests/**/obj/
+frontend/dist/
+frontend/node_modules/
+frontend/.vite/
+
+# Logs
+*.log
+logs/
+backend/logs/
+
+# Docker volumes
+.docker/
+
+# IDEs
+.vs/
+.vscode/settings.json
+*.user
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test results
+*.trx
+TestResults/
+coverage/
+*.coverage
+
+# Secrets
+*.pfx
+*.p12
+ssl/
+*.pem
+*.key
+*.crt
