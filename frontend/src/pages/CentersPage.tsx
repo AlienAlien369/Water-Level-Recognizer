@@ -98,7 +98,8 @@ export function CentersPage() {
 
       {/* Desktop table */}
       <div className="hidden md:block bg-card border border-border rounded-xl overflow-hidden shadow-sm">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[600px] text-sm">
           <thead className="bg-muted/50 border-b border-border">
             <tr>
               <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Name</th>
@@ -170,6 +171,7 @@ export function CentersPage() {
                 ))}
           </tbody>
         </table>
+        </div>
 
         {!isLoading && (!data?.items || data.items.length === 0) && (
           <div className="text-center py-16">
