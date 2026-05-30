@@ -2,8 +2,14 @@ import axios from 'axios';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 
+// In production (Render+Vercel), VITE_API_URL is set to the Render backend URL.
+// In development, Vite's proxy handles /api -> localhost:8080.
+const BASE_URL = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api/v1`
+  : '/api/v1';
+
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
   timeout: 30000,
 });
@@ -23,7 +29,10 @@ api.interceptors.response.use(
       const { refreshToken, setAuth, logout } = useAuthStore.getState();
       if (refreshToken) {
         try {
-          const response = await axios.post('/api/v1/auth/refresh-token', { refreshToken });
+          const refreshUrl = import.meta.env.VITE_API_URL
+            ? `${import.meta.env.VITE_API_URL}/api/v1/auth/refresh-token`
+            : '/api/v1/auth/refresh-token';
+          const response = await axios.post(refreshUrl, { refreshToken });
           const data = response.data.data;
           setAuth(data);
           originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
