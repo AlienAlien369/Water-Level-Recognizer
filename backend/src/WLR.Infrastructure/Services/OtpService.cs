@@ -27,14 +27,13 @@ public class OtpService : IOtpService
 
     public async Task SendOtpAsync(string mobileNumber, string otp, CancellationToken cancellationToken = default)
     {
-        // In production, integrate with SMS gateway (Twilio, AWS SNS, etc.)
-        // For development, just log the OTP
-        _logger.LogInformation("📱 OTP for {MobileNumber}: {OTP}", mobileNumber, otp);
-
         var smsProvider = _configuration["SmsSettings:Provider"];
+
+        // LogWarning so OTP appears in production logs (min level = Warning)
+        _logger.LogWarning("📱 OTP for {MobileNumber}: {OTP} (provider={Provider})", mobileNumber, otp, smsProvider);
+
         if (smsProvider == "Console")
         {
-            // Development mode - just log
             await Task.CompletedTask;
             return;
         }

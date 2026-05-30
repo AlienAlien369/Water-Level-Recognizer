@@ -25,7 +25,13 @@ public class ExceptionHandlingMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception: {Message}", ex.Message);
+            // Business-rule exceptions are expected — log at Warning, not Error
+            if (ex is DomainException or NotFoundException or ForbiddenException or ConflictException
+                || ex is ValidationException or UnauthorizedAccessException)
+                _logger.LogWarning("Handled exception ({Type}): {Message}", ex.GetType().Name, ex.Message);
+            else
+                _logger.LogError(ex, "Unhandled exception: {Message}", ex.Message);
+
             await HandleExceptionAsync(context, ex);
         }
     }
