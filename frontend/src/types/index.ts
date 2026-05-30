@@ -109,18 +109,18 @@ export interface MotorLog {
   notes?: string;
 }
 
-export interface MotorHistoryLog {
-  id: string;
+export interface MotorSession {
+  sessionId: string;
   motorId: string;
   motorNumber: string;
   locationName: string;
   centerName: string;
-  operatedByUserId: string;
-  operatedByUserName: string;
-  action: 'Open' | 'Close';
-  actionTime: string;
+  openedByUserId: string;
+  openedByUserName: string;
+  openTime: string;
+  closeTime?: string;
   durationMinutes?: number;
-  notes?: string;
+  isRunning: boolean;
 }
 
 export interface Notification {

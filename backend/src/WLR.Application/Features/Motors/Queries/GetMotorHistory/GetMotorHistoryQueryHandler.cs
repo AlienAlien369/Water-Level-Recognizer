@@ -6,12 +6,12 @@ using WLR.Application.DTOs;
 
 namespace WLR.Application.Features.Motors.Queries.GetMotorHistory;
 
-public class GetMotorHistoryQueryHandler : IRequestHandler<GetMotorHistoryQuery, PaginatedResult<MotorHistoryLogDto>>
+public class GetMotorHistoryQueryHandler : IRequestHandler<GetMotorHistoryQuery, PaginatedResult<MotorSessionDto>>
 {
     private readonly IApplicationDbContext _context;
     public GetMotorHistoryQueryHandler(IApplicationDbContext context) => _context = context;
 
-    public async Task<PaginatedResult<MotorHistoryLogDto>> Handle(GetMotorHistoryQuery request, CancellationToken cancellationToken)
+    public async Task<PaginatedResult<MotorSessionDto>> Handle(GetMotorHistoryQuery request, CancellationToken cancellationToken)
     {
         var now = DateTime.UtcNow;
         DateTime? start = null;
@@ -37,6 +37,7 @@ public class GetMotorHistoryQueryHandler : IRequestHandler<GetMotorHistoryQuery,
                 break;
         }
 
+        // Load all logs in range (we need both Open and Close to pair them)
         var q = _context.MotorLogs
             .Include(l => l.Motor).ThenInclude(m => m!.Location).ThenInclude(loc => loc!.Center)
             .Include(l => l.OperatedByUser)
@@ -51,29 +52,66 @@ public class GetMotorHistoryQueryHandler : IRequestHandler<GetMotorHistoryQuery,
         if (request.CenterId.HasValue)
             q = q.Where(l => l.Motor != null && l.Motor.Location != null && l.Motor.Location.CenterId == request.CenterId.Value);
 
-        var total = await q.CountAsync(cancellationToken);
-        var pageSize = request.PageSize > 0 ? request.PageSize : 20;
-        var pageNumber = request.PageNumber > 0 ? request.PageNumber : 1;
-
-        var items = await q
-            .OrderByDescending(l => l.ActionTime)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .Select(l => new MotorHistoryLogDto(
-                l.Id,
-                l.MotorId,
-                l.Motor != null ? l.Motor.MotorNumber : "",
-                l.Motor != null && l.Motor.Location != null ? l.Motor.Location.Name : "",
-                l.Motor != null && l.Motor.Location != null && l.Motor.Location.Center != null ? l.Motor.Location.Center.Name : "",
-                l.OperatedByUserId,
-                l.OperatedByUser != null ? l.OperatedByUser.Name : "",
-                l.Action,
-                l.ActionTime,
-                l.DurationMinutes,
-                l.Notes
-            ))
+        var allLogs = await q
+            .OrderBy(l => l.MotorId)
+            .ThenBy(l => l.ActionTime)
             .ToListAsync(cancellationToken);
 
-        return new PaginatedResult<MotorHistoryLogDto>(items, total, pageNumber, pageSize);
+        // Pair Open → Close logs per motor into sessions
+        var sessions = new List<MotorSessionDto>();
+        // track pending opens: motorId → open log
+        var pendingOpens = new Dictionary<Guid, WLR.Domain.Entities.MotorLog>();
+
+        foreach (var log in allLogs)
+        {
+            if (log.Action == "Open")
+            {
+                // If there was already an unpaired open for this motor, treat it as still-running
+                if (pendingOpens.TryGetValue(log.MotorId, out var prev))
+                    sessions.Add(BuildSession(prev, null));
+
+                pendingOpens[log.MotorId] = log;
+            }
+            else if (log.Action == "Close")
+            {
+                if (pendingOpens.TryGetValue(log.MotorId, out var openLog))
+                {
+                    sessions.Add(BuildSession(openLog, log));
+                    pendingOpens.Remove(log.MotorId);
+                }
+                // Close without matching open in range — skip
+            }
+        }
+
+        // Any unpaired opens = still running
+        foreach (var openLog in pendingOpens.Values)
+            sessions.Add(BuildSession(openLog, null));
+
+        // Sort newest first, then paginate in-memory
+        sessions.Sort((a, b) => b.OpenTime.CompareTo(a.OpenTime));
+
+        var total = sessions.Count;
+        var pageSize = request.PageSize > 0 ? request.PageSize : 20;
+        var pageNumber = request.PageNumber > 0 ? request.PageNumber : 1;
+        var paged = sessions.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+
+        return new PaginatedResult<MotorSessionDto>(paged, total, pageNumber, pageSize);
+    }
+
+    private static MotorSessionDto BuildSession(WLR.Domain.Entities.MotorLog openLog, WLR.Domain.Entities.MotorLog? closeLog)
+    {
+        return new MotorSessionDto(
+            openLog.Id.ToString(),
+            openLog.MotorId,
+            openLog.Motor?.MotorNumber ?? "",
+            openLog.Motor?.Location?.Name ?? "",
+            openLog.Motor?.Location?.Center?.Name ?? "",
+            openLog.OperatedByUserId,
+            openLog.OperatedByUser?.Name ?? "",
+            openLog.ActionTime,
+            closeLog?.ActionTime,
+            closeLog?.DurationMinutes,
+            closeLog is null
+        );
     }
 }

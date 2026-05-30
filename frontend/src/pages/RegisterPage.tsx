@@ -14,7 +14,7 @@ const schema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
   email: z.string().email('Invalid email').optional().or(z.literal('')),
-  centerId: z.string().optional(),
+  centerId: z.string().min(1, 'Center is required'),
 }).refine(d => d.password === d.confirmPassword, { message: 'Passwords do not match', path: ['confirmPassword'] });
 
 type FormData = z.infer<typeof schema>;
@@ -35,7 +35,7 @@ export function RegisterPage() {
       mobileNumber: data.mobileNumber,
       password: data.password,
       email: data.email || undefined,
-      centerId: data.centerId || undefined,
+      centerId: data.centerId,
     });
   };
 
@@ -95,7 +95,7 @@ export function RegisterPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Center <span className="text-gray-400 font-normal">(Optional)</span>
+                Center *
               </label>
               <div className="relative">
                 <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -109,6 +109,7 @@ export function RegisterPage() {
                   ))}
                 </select>
               </div>
+              {errors.centerId && <p className="text-red-500 text-xs mt-1">{errors.centerId.message}</p>}
             </div>
 
             <div>

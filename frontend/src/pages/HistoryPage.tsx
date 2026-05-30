@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { History, Power, PowerOff, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { History, Power, PowerOff, ChevronLeft, ChevronRight, Calendar, Clock } from 'lucide-react';
 import { useMotorHistory } from '@/hooks/useMotors';
 import { formatDate, formatDuration, cn } from '@/lib/utils';
 
@@ -36,7 +36,7 @@ export function HistoryPage() {
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-xl md:text-2xl font-bold text-foreground">Motor History</h1>
-        <p className="text-muted-foreground text-sm mt-1">Complete log of all motor open/close operations</p>
+        <p className="text-muted-foreground text-sm mt-1">Complete log of all motor sessions (open → close)</p>
       </motion.div>
 
       {/* Date Filters */}
@@ -89,23 +89,22 @@ export function HistoryPage() {
       {/* Table */}
       <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px] text-sm">
+          <table className="w-full min-w-[750px] text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/50">
                 <th className="text-left px-4 py-3 font-semibold text-foreground">Motor #</th>
-                <th className="text-left px-4 py-3 font-semibold text-foreground">Location</th>
-                <th className="text-left px-4 py-3 font-semibold text-foreground">Center</th>
-                <th className="text-left px-4 py-3 font-semibold text-foreground">Action</th>
-                <th className="text-left px-4 py-3 font-semibold text-foreground">Operated By</th>
-                <th className="text-left px-4 py-3 font-semibold text-foreground">Time</th>
+                <th className="text-left px-4 py-3 font-semibold text-foreground">Location / Center</th>
+                <th className="text-left px-4 py-3 font-semibold text-foreground">Opened At</th>
+                <th className="text-left px-4 py-3 font-semibold text-foreground">Closed At</th>
                 <th className="text-left px-4 py-3 font-semibold text-foreground">Duration</th>
+                <th className="text-left px-4 py-3 font-semibold text-foreground">Operated By</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 Array.from({ length: 8 }).map((_, i) => (
                   <tr key={i} className="border-b border-border">
-                    {Array.from({ length: 7 }).map((_, j) => (
+                    {Array.from({ length: 6 }).map((_, j) => (
                       <td key={j} className="px-4 py-3">
                         <div className="h-4 bg-muted rounded animate-pulse" />
                       </td>
@@ -114,42 +113,67 @@ export function HistoryPage() {
                 ))
               ) : data?.items?.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-16 text-center">
+                  <td colSpan={6} className="px-4 py-16 text-center">
                     <History className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
                     <p className="text-muted-foreground font-medium">No history found</p>
                     <p className="text-muted-foreground text-xs mt-1">Try selecting a different date range</p>
                   </td>
                 </tr>
               ) : (
-                data?.items?.map((log, idx) => (
+                data?.items?.map((session, idx) => (
                   <motion.tr
-                    key={log.id}
+                    key={session.sessionId}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: idx * 0.02 }}
                     className="border-b border-border hover:bg-accent/50 transition-colors"
                   >
-                    <td className="px-4 py-3 font-semibold text-foreground">#{log.motorNumber}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{log.locationName}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{log.centerName}</td>
+                    {/* Motor # */}
                     <td className="px-4 py-3">
-                      <span className={cn(
-                        'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold',
-                        log.action === 'Open'
-                          ? 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400'
-                          : 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400'
-                      )}>
-                        {log.action === 'Open'
-                          ? <Power className="w-3 h-3" />
-                          : <PowerOff className="w-3 h-3" />}
-                        {log.action}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <div className={cn(
+                          'w-2 h-2 rounded-full shrink-0',
+                          session.isRunning ? 'bg-green-500 animate-pulse' : 'bg-gray-300'
+                        )} />
+                        <span className="font-semibold text-foreground">#{session.motorNumber}</span>
+                      </div>
                     </td>
-                    <td className="px-4 py-3 text-foreground">{log.operatedByUserName}</td>
-                    <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{formatDate(log.actionTime)}</td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {log.durationMinutes != null ? formatDuration(log.durationMinutes) : '—'}
+
+                    {/* Location / Center */}
+                    <td className="px-4 py-3">
+                      <p className="text-foreground text-sm">{session.locationName}</p>
+                      <p className="text-muted-foreground text-xs">{session.centerName}</p>
                     </td>
+
+                    {/* Opened At */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
+                        <Power className="w-3.5 h-3.5 shrink-0" />
+                        <span className="whitespace-nowrap text-sm">{formatDate(session.openTime)}</span>
+                      </div>
+                    </td>
+
+                    {/* Closed At */}
+                    <td className="px-4 py-3">
+                      {session.isRunning ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400 px-2 py-1 rounded-full">
+                          <Clock className="w-3 h-3" /> Running
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400">
+                          <PowerOff className="w-3.5 h-3.5 shrink-0" />
+                          <span className="whitespace-nowrap text-sm">{session.closeTime ? formatDate(session.closeTime) : '—'}</span>
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Duration */}
+                    <td className="px-4 py-3 text-muted-foreground font-medium">
+                      {session.isRunning ? '—' : session.durationMinutes != null ? formatDuration(session.durationMinutes) : '—'}
+                    </td>
+
+                    {/* Operated By */}
+                    <td className="px-4 py-3 text-foreground">{session.openedByUserName}</td>
                   </motion.tr>
                 ))
               )}
@@ -161,7 +185,7 @@ export function HistoryPage() {
         {data && data.totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-border">
             <p className="text-sm text-muted-foreground">
-              {data.totalCount} record{data.totalCount !== 1 ? 's' : ''}
+              {data.totalCount} session{data.totalCount !== 1 ? 's' : ''}
             </p>
             <div className="flex items-center gap-2">
               <button

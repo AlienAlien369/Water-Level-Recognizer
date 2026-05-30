@@ -12,4 +12,4 @@ public record GetMotorHistoryQuery(
     DateTime? EndDate,
     Guid? MotorId,
     Guid? CenterId
-) : IRequest<PaginatedResult<MotorHistoryLogDto>>;
+) : IRequest<PaginatedResult<MotorSessionDto>>;

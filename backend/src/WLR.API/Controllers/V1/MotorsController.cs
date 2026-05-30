@@ -83,7 +83,7 @@ public class MotorsController : BaseController
 
     [HttpGet("history")]
     [Authorize(Roles = "SuperAdmin,Admin")]
-    [ProducesResponseType(typeof(ApiResponse<PaginatedResult<MotorHistoryLogDto>>), 200)]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResult<MotorSessionDto>>), 200)]
     public async Task<IActionResult> GetHistory(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 20,
@@ -96,6 +96,6 @@ public class MotorsController : BaseController
     {
         var queryCmd = new GetMotorHistoryQuery(pageNumber, pageSize, dateFilter, startDate, endDate, motorId, centerId);
         var result = await Mediator.Send(queryCmd, cancellationToken);
-        return Ok(ApiResponse<PaginatedResult<MotorHistoryLogDto>>.Ok(result));
+        return Ok(ApiResponse<PaginatedResult<MotorSessionDto>>.Ok(result));
     }
 }

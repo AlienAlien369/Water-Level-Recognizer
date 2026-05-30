@@ -30,14 +30,14 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthRespo
         if (exists)
             throw new ConflictException($"A user with mobile number {request.MobileNumber} already exists.");
 
-        // Validate center if provided
-        if (request.CenterId.HasValue)
-        {
-            var centerExists = await _context.Centers
-                .AnyAsync(c => c.Id == request.CenterId.Value && c.IsActive && !c.IsDeleted, cancellationToken);
-            if (!centerExists)
-                throw new NotFoundException("Center", request.CenterId.Value);
-        }
+        // Center is required
+        if (!request.CenterId.HasValue)
+            throw new DomainException("Center is required for registration.");
+
+        var centerExists = await _context.Centers
+            .AnyAsync(c => c.Id == request.CenterId.Value && c.IsActive && !c.IsDeleted, cancellationToken);
+        if (!centerExists)
+            throw new NotFoundException("Center", request.CenterId.Value);
 
         var user = User.Create(request.Name, request.MobileNumber, request.Email, centerId: request.CenterId);
         user.SetPassword(_passwordService.Hash(request.Password));

@@ -38,16 +38,16 @@ public record MotorLogDto(
     string? Notes
 );
 
-public record MotorHistoryLogDto(
-    Guid Id,
+public record MotorSessionDto(
+    string SessionId,
     Guid MotorId,
     string MotorNumber,
     string LocationName,
     string CenterName,
-    Guid OperatedByUserId,
-    string OperatedByUserName,
-    string Action,
-    DateTime ActionTime,
+    Guid OpenedByUserId,
+    string OpenedByUserName,
+    DateTime OpenTime,
+    DateTime? CloseTime,
     double? DurationMinutes,
-    string? Notes
+    bool IsRunning
 );
