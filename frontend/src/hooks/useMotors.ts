@@ -80,3 +80,19 @@ export function useCloseMotor() {
     },
   });
 }
+
+export function useMotorHistory(params?: {
+  pageNumber?: number;
+  pageSize?: number;
+  dateFilter?: string;
+  startDate?: string;
+  endDate?: string;
+  motorId?: string;
+  centerId?: string;
+}) {
+  return useQuery({
+    queryKey: ['motor-history', params],
+    queryFn: () => motorsApi.getHistory(params),
+    select: (r) => r.data.data,
+  });
+}

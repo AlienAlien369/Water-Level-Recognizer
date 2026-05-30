@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Building2, MapPin, Zap, Users,
   ClipboardList, BarChart3, Bell, Shield, Settings,
-  Droplets, ChevronLeft, ChevronRight, X
+  Droplets, ChevronLeft, ChevronRight, X, History
 } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { useAuthStore } from '@/store/authStore';
@@ -11,10 +11,11 @@ import { UserRole } from '@/types';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: [UserRole.SuperAdmin, UserRole.Admin, UserRole.User] },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: [UserRole.SuperAdmin, UserRole.Admin] },
   { to: '/centers', icon: Building2, label: 'Centers', roles: [UserRole.SuperAdmin] },
   { to: '/locations', icon: MapPin, label: 'Locations', roles: [UserRole.SuperAdmin, UserRole.Admin] },
   { to: '/motors', icon: Zap, label: 'Motors', roles: [UserRole.SuperAdmin, UserRole.Admin, UserRole.User] },
+  { to: '/history', icon: History, label: 'History', roles: [UserRole.SuperAdmin, UserRole.Admin, UserRole.User] },
   { to: '/users', icon: Users, label: 'Users', roles: [UserRole.SuperAdmin, UserRole.Admin] },
   { to: '/assignments', icon: ClipboardList, label: 'Assignments', roles: [UserRole.SuperAdmin, UserRole.Admin] },
   { to: '/reports', icon: BarChart3, label: 'Reports', roles: [UserRole.SuperAdmin, UserRole.Admin] },

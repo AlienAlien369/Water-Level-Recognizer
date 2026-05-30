@@ -9,6 +9,7 @@ using WLR.Application.Features.Motors.Commands.OpenMotor;
 using WLR.Application.Features.Motors.Commands.UpdateMotor;
 using WLR.Application.Features.Motors.Queries.GetMotorById;
 using WLR.Application.Features.Motors.Queries.GetMotors;
+using WLR.Application.Features.Motors.Queries.GetMotorHistory;
 
 namespace WLR.API.Controllers.V1;
 
@@ -78,5 +79,23 @@ public class MotorsController : BaseController
     public async Task<IActionResult> GetLogs(Guid id, [FromQuery] QueryParams query, CancellationToken cancellationToken)
     {
         return Ok(ApiResponse<object>.Ok(new { motorId = id, message = "Motor logs endpoint ready" }));
+    }
+
+    [HttpGet("history")]
+    [Authorize(Roles = "SuperAdmin,Admin")]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResult<MotorHistoryLogDto>>), 200)]
+    public async Task<IActionResult> GetHistory(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? dateFilter = null,
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
+        [FromQuery] Guid? motorId = null,
+        [FromQuery] Guid? centerId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var queryCmd = new GetMotorHistoryQuery(pageNumber, pageSize, dateFilter, startDate, endDate, motorId, centerId);
+        var result = await Mediator.Send(queryCmd, cancellationToken);
+        return Ok(ApiResponse<PaginatedResult<MotorHistoryLogDto>>.Ok(result));
     }
 }

@@ -37,3 +37,17 @@ public record MotorLogDto(
     double? DurationMinutes,
     string? Notes
 );
+
+public record MotorHistoryLogDto(
+    Guid Id,
+    Guid MotorId,
+    string MotorNumber,
+    string LocationName,
+    string CenterName,
+    Guid OperatedByUserId,
+    string OperatedByUserName,
+    string Action,
+    DateTime ActionTime,
+    double? DurationMinutes,
+    string? Notes
+);

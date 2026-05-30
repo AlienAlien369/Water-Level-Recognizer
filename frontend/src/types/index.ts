@@ -109,6 +109,20 @@ export interface MotorLog {
   notes?: string;
 }
 
+export interface MotorHistoryLog {
+  id: string;
+  motorId: string;
+  motorNumber: string;
+  locationName: string;
+  centerName: string;
+  operatedByUserId: string;
+  operatedByUserName: string;
+  action: 'Open' | 'Close';
+  actionTime: string;
+  durationMinutes?: number;
+  notes?: string;
+}
+
 export interface Notification {
   id: string;
   title: string;

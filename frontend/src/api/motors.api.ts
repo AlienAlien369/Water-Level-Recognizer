@@ -1,8 +1,8 @@
 import api from './axiosInstance';
-import type { ApiResponse, Motor, MotorLog, PaginatedResult, QueryParams } from '@/types';
+import type { ApiResponse, Motor, MotorLog, MotorHistoryLog, PaginatedResult, QueryParams } from '@/types';
 
 export const motorsApi = {
-  getAll: (params?: QueryParams & { locationId?: string }) =>
+  getAll: (params?: QueryParams & { locationId?: string; centerId?: string; status?: number; state?: number }) =>
     api.get<ApiResponse<PaginatedResult<Motor>>>('/motors', { params }),
 
   getById: (id: string) =>
@@ -22,6 +22,17 @@ export const motorsApi = {
 
   getLogs: (id: string, params?: QueryParams) =>
     api.get<ApiResponse<PaginatedResult<MotorLog>>>(`/motors/${id}/logs`, { params }),
+
+  getHistory: (params?: {
+    pageNumber?: number;
+    pageSize?: number;
+    dateFilter?: string;
+    startDate?: string;
+    endDate?: string;
+    motorId?: string;
+    centerId?: string;
+  }) =>
+    api.get<ApiResponse<PaginatedResult<MotorHistoryLog>>>('/motors/history', { params }),
 
   delete: (id: string) =>
     api.delete<ApiResponse>(`/motors/${id}`),

@@ -15,15 +15,21 @@ import { ReportsPage } from '@/pages/ReportsPage';
 import { NotificationsPage } from '@/pages/NotificationsPage';
 import { AuditLogsPage } from '@/pages/AuditLogsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { HistoryPage } from '@/pages/HistoryPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
+import { UserRole } from '@/types';
 
 export default function App() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
+
+  const defaultHome = isAuthenticated
+    ? user?.role === UserRole.User ? '/motors' : '/dashboard'
+    : '/login';
 
   return (
     <Routes>
       {/* Public */}
-      <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/dashboard" replace />} />
+      <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to={defaultHome} replace />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/otp" element={<Navigate to="/login" replace />} />
 
@@ -40,11 +46,13 @@ export default function App() {
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/audit-logs" element={<AuditLogsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/history" element={<HistoryPage />} />
         </Route>
       </Route>
 
-      <Route path="/" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />
+      <Route path="/" element={<Navigate to={defaultHome} replace />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
+
