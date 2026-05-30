@@ -198,20 +198,18 @@ jobs:
       name: production-frontend
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Install Vercel CLI
-        run: npm install -g vercel@latest
-
-      - name: Deploy to Vercel
-        run: vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      - name: Trigger Vercel Deploy Hook
+        run: |
+          echo "Triggering Vercel deployment..."
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "https://api.vercel.com/v1/integrations/deploy/prj_1LpPcSSOQjWUbhm7rOjP5FzLBrFQ/rnNxf04Kw9")
+          echo "Vercel API response: $RESPONSE"
+          if [ "$RESPONSE" -ge 200 ] && [ "$RESPONSE" -lt 300 ]; then
+            echo "✅ Vercel deploy triggered — https://water-level-recognizer.vercel.app"
+          else
+            echo "❌ Vercel deploy hook returned HTTP $RESPONSE"
+            exit 1
+          fi
 
   # ===== Deploy Backend to Render =====
   deploy-render:
@@ -225,7 +223,19 @@ jobs:
     steps:
       - name: Trigger Render Deploy Hook
         run: |
-          curl -s -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" \
-            -H "Content-Type: application/json" \
-            --fail
-          echo "Render deploy triggered at $(date)"
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "⚠️  RENDER_DEPLOY_HOOK_URL secret is not set."
+            echo "   To enable auto-deploy: Render Dashboard → Service → Settings → Deploy Hooks → Create hook → add as GitHub secret RENDER_DEPLOY_HOOK_URL"
+            exit 0
+          fi
+          echo "Triggering Render deployment..."
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$RENDER_DEPLOY_HOOK_URL")
+          echo "Render API response: $RESPONSE"
+          if [ "$RESPONSE" -ge 200 ] && [ "$RESPONSE" -lt 300 ]; then
+            echo "✅ Render deploy triggered — https://wlr-backend.onrender.com"
+          else
+            echo "❌ Render deploy hook returned HTTP $RESPONSE"
+            exit 1
+          fi
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
