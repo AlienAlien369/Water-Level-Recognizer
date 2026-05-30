@@ -21,10 +21,11 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
     {
         var centerId = request.CenterId ?? (_currentUser.IsAdmin ? _currentUser.CenterId : null);
 
-        var centersQuery = _context.Centers.Where(c => !c.IsDeleted);
-        var locationsQuery = _context.Locations.Where(l => !l.IsDeleted);
-        var motorsQuery = _context.Motors.Where(m => !m.IsDeleted);
-        var usersQuery = _context.Users.Where(u => !u.IsDeleted);
+        // Global query filters already apply !IsDeleted on all entities
+        var centersQuery = _context.Centers.AsQueryable();
+        var locationsQuery = _context.Locations.AsQueryable();
+        var motorsQuery = _context.Motors.AsQueryable();
+        var usersQuery = _context.Users.AsQueryable();
 
         if (centerId.HasValue && !_currentUser.IsSuperAdmin)
         {

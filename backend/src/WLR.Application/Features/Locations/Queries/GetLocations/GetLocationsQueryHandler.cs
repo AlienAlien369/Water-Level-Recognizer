@@ -12,7 +12,8 @@ public class GetLocationsQueryHandler : IRequestHandler<GetLocationsQuery, Pagin
 
     public async Task<PaginatedResult<LocationDto>> Handle(GetLocationsQuery request, CancellationToken cancellationToken)
     {
-        var q = _context.Locations.Include(l => l.Center).Where(l => !l.IsDeleted);
+        // Global query filter already applies !IsDeleted — avoid Include() with nullable nav props
+        var q = _context.Locations.AsQueryable();
 
         if (request.CenterId.HasValue)
             q = q.Where(l => l.CenterId == request.CenterId.Value);
@@ -30,10 +31,11 @@ public class GetLocationsQueryHandler : IRequestHandler<GetLocationsQuery, Pagin
             .Skip((request.Params.PageNumber - 1) * request.Params.PageSize)
             .Take(request.Params.PageSize)
             .Select(l => new LocationDto(
-                l.Id, l.CenterId, l.Center != null ? l.Center.Name : "",
+                l.Id, l.CenterId,
+                l.Center != null ? l.Center.Name : "",
                 l.Name, l.Description, l.Floor, l.Zone, l.IsActive,
-                l.Motors.Count(m => !m.IsDeleted),
-                l.Motors.Count(m => !m.IsDeleted && m.IsActive),
+                l.Motors.Count(),
+                l.Motors.Count(m => m.IsActive),
                 l.CreatedAt))
             .ToListAsync(cancellationToken);
 

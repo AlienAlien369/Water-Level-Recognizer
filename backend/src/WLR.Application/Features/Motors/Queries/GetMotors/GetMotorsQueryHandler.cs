@@ -12,10 +12,9 @@ public class GetMotorsQueryHandler : IRequestHandler<GetMotorsQuery, PaginatedRe
 
     public async Task<PaginatedResult<MotorDto>> Handle(GetMotorsQuery request, CancellationToken cancellationToken)
     {
-        var q = _context.Motors
-            .Include(m => m.Location).ThenInclude(l => l!.Center)
-            .Include(m => m.AssignedSewadaar)
-            .Where(m => !m.IsDeleted);
+        // Global query filter already applies !IsDeleted. Use Select() projection to avoid
+        // null navigation properties caused by Include() + global query filter interaction.
+        var q = _context.Motors.AsQueryable();
 
         if (request.LocationId.HasValue)
             q = q.Where(m => m.LocationId == request.LocationId.Value);
@@ -37,13 +36,14 @@ public class GetMotorsQueryHandler : IRequestHandler<GetMotorsQuery, PaginatedRe
             .Take(request.Params.PageSize)
             .Select(m => new MotorDto(
                 m.Id, m.LocationId,
-                m.Location != null ? m.Location.Name : "",
-                m.Location != null ? m.Location.CenterId : Guid.Empty,
-                m.Location != null && m.Location.Center != null ? m.Location.Center.Name : "",
+                m.Location == null ? "" : m.Location.Name,
+                m.Location == null ? Guid.Empty : m.Location.CenterId,
+                m.Location == null || m.Location.Center == null ? "" : m.Location.Center.Name,
                 m.MotorNumber, m.Description, m.WaterCapacityLiters,
                 m.Status, m.CurrentState, m.LastOpenedAt, m.LastClosedAt,
                 m.TotalRunningMinutes, m.IsActive,
-                m.AssignedSewadaarId, m.AssignedSewadaar != null ? m.AssignedSewadaar.Name : null,
+                m.AssignedSewadaarId,
+                m.AssignedSewadaar == null ? null : m.AssignedSewadaar.Name,
                 m.CreatedAt))
             .ToListAsync(cancellationToken);
 

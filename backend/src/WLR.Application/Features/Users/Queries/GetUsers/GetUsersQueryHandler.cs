@@ -12,7 +12,8 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, PaginatedResu
 
     public async Task<PaginatedResult<UserDto>> Handle(GetUsersQuery request, CancellationToken cancellationToken)
     {
-        var q = _context.Users.Where(u => !u.IsDeleted);
+        // Global query filter already applies !IsDeleted
+        var q = _context.Users.AsQueryable();
 
         if (request.CenterId.HasValue)
             q = q.Where(u => u.CenterId == request.CenterId.Value);

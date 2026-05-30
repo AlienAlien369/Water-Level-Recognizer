@@ -12,7 +12,8 @@ public class GetCentersQueryHandler : IRequestHandler<GetCentersQuery, Paginated
 
     public async Task<PaginatedResult<CenterDto>> Handle(GetCentersQuery request, CancellationToken cancellationToken)
     {
-        var q = _context.Centers.Where(c => !c.IsDeleted);
+        // Global query filter already applies !IsDeleted — no need to repeat it
+        var q = _context.Centers.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(request.Params.Search))
             q = q.Where(c => c.Name.Contains(request.Params.Search) || (c.City != null && c.City.Contains(request.Params.Search)));
@@ -29,8 +30,8 @@ public class GetCentersQueryHandler : IRequestHandler<GetCentersQuery, Paginated
             .Select(c => new CenterDto(
                 c.Id, c.Name, c.Description, c.Address, c.City, c.State, c.Country,
                 c.ContactPhone, c.ContactEmail, c.IsActive,
-                c.Locations.Count(l => !l.IsDeleted),
-                c.Locations.Where(l => !l.IsDeleted).SelectMany(l => l.Motors).Count(m => !m.IsDeleted),
+                c.Locations.Count(),
+                c.Locations.Sum(l => (int?)l.Motors.Count()) ?? 0,
                 c.CreatedAt, c.RequiresAssignment))
             .ToListAsync(cancellationToken);
 
