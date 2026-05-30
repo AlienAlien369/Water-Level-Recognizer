@@ -22,7 +22,7 @@ export function useRegister() {
   const { setAuth } = useAuthStore();
   const navigate = useNavigate();
   return useMutation({
-    mutationFn: (data: { name: string; mobileNumber: string; password: string; email?: string }) =>
+    mutationFn: (data: { name: string; mobileNumber: string; password: string; email?: string; centerId?: string }) =>
       authApi.register(data),
     onSuccess: (response) => {
       const data = response.data.data!;

@@ -60,6 +60,7 @@ export interface Center {
   locationCount: number;
   motorCount: number;
   createdAt: string;
+  requiresAssignment: boolean;
 }
 
 export interface Location {

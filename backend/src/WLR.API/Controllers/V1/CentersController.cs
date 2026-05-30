@@ -4,6 +4,7 @@ using WLR.Application.Common.Models;
 using WLR.Application.DTOs;
 using WLR.Application.Features.Centers.Commands.CreateCenter;
 using WLR.Application.Features.Centers.Commands.DeleteCenter;
+using WLR.Application.Features.Centers.Commands.ToggleCenterAssignment;
 using WLR.Application.Features.Centers.Commands.UpdateCenter;
 using WLR.Application.Features.Centers.Queries.GetCenterById;
 using WLR.Application.Features.Centers.Queries.GetCenters;
@@ -14,6 +15,7 @@ namespace WLR.API.Controllers.V1;
 public class CentersController : BaseController
 {
     [HttpGet]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<PaginatedResult<CenterDto>>), 200)]
     public async Task<IActionResult> GetAll([FromQuery] QueryParams query, CancellationToken cancellationToken)
     {
@@ -47,6 +49,16 @@ public class CentersController : BaseController
         var cmd = new UpdateCenterCommand(id, request.Name, request.Description, request.Address, request.City, request.State, request.Country, request.ContactPhone, request.ContactEmail);
         var result = await Mediator.Send(cmd, cancellationToken);
         return Ok(ApiResponse<CenterDto>.Ok(result, "Center updated successfully."));
+    }
+
+    [HttpPatch("{id:guid}/assignment-mode")]
+    [Authorize(Roles = "SuperAdmin")]
+    [ProducesResponseType(typeof(ApiResponse<CenterDto>), 200)]
+    public async Task<IActionResult> ToggleAssignmentMode(Guid id, [FromBody] ToggleCenterAssignmentRequest request, CancellationToken cancellationToken)
+    {
+        var cmd = new ToggleCenterAssignmentCommand(id, request.RequiresAssignment);
+        var result = await Mediator.Send(cmd, cancellationToken);
+        return Ok(ApiResponse<CenterDto>.Ok(result, $"Assignment mode set to {(request.RequiresAssignment ? "required" : "open access")}."));
     }
 
     [HttpDelete("{id:guid}")]

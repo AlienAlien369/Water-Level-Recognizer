@@ -24,14 +24,26 @@ public class CloseMotorCommandHandler : IRequestHandler<CloseMotorCommand, Motor
     public async Task<MotorLogDto> Handle(CloseMotorCommand request, CancellationToken cancellationToken)
     {
         var motor = await _context.Motors
-            .Include(m => m.Location)
+            .Include(m => m.Location).ThenInclude(l => l!.Center)
             .FirstOrDefaultAsync(m => m.Id == request.MotorId && !m.IsDeleted, cancellationToken);
 
         if (motor == null) throw new NotFoundException("Motor", request.MotorId);
 
-        if (_currentUser.Role == Domain.Enums.UserRole.User &&
-            motor.AssignedSewadaarId != _currentUser.UserId)
-            throw new ForbiddenException("You are not assigned to this motor.");
+        if (_currentUser.Role == Domain.Enums.UserRole.User)
+        {
+            var centerRequiresAssignment = motor.Location?.Center?.RequiresAssignment ?? true;
+            var userBelongsToCenter = motor.Location?.CenterId == _currentUser.CenterId;
+
+            if (centerRequiresAssignment)
+            {
+                if (motor.AssignedSewadaarId != _currentUser.UserId)
+                    throw new ForbiddenException("You are not assigned to this motor.");
+            }
+            else if (!userBelongsToCenter)
+            {
+                throw new ForbiddenException("You do not belong to this center.");
+            }
+        }
 
         var userId = _currentUser.UserId ?? throw new ForbiddenException();
         var log = motor.Close(userId, Guid.Empty, request.Notes);

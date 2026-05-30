@@ -17,7 +17,7 @@ public class AuthController : BaseController
     {
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
         var userAgent = Request.Headers["User-Agent"].ToString();
-        var result = await Mediator.Send(new RegisterCommand(request.Name, request.MobileNumber, request.Password, request.Email, null, ip, userAgent), cancellationToken);
+        var result = await Mediator.Send(new RegisterCommand(request.Name, request.MobileNumber, request.Password, request.Email, null, ip, userAgent, request.CenterId), cancellationToken);
         return Ok(ApiResponse<AuthResponse>.Ok(result, "Registration successful."));
     }
 

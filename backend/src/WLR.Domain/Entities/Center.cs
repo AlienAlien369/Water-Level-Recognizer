@@ -13,6 +13,11 @@ public sealed class Center : AuditableEntity
     public string? ContactPhone { get; private set; }
     public string? ContactEmail { get; private set; }
     public bool IsActive { get; private set; } = true;
+    /// <summary>
+    /// When true (default), only assigned sewadars can operate motors.
+    /// When false, any user of this center can operate any motor.
+    /// </summary>
+    public bool RequiresAssignment { get; private set; } = true;
 
     private readonly List<Location> _locations = new();
     public IReadOnlyCollection<Location> Locations => _locations.AsReadOnly();
@@ -44,6 +49,12 @@ public sealed class Center : AuditableEntity
         Country = country;
         ContactPhone = contactPhone;
         ContactEmail = contactEmail;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetRequiresAssignment(bool value)
+    {
+        RequiresAssignment = value;
         UpdatedAt = DateTime.UtcNow;
     }
 

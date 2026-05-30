@@ -29,6 +29,6 @@ public class CreateCenterCommandHandler : IRequestHandler<CreateCenterCommand, C
         await _auditService.LogAsync("CreateCenter", "Center", center.Id.ToString(), newValues: new { center.Name }, cancellationToken: cancellationToken);
 
         return new CenterDto(center.Id, center.Name, center.Description, center.Address, center.City, center.State, center.Country,
-            center.ContactPhone, center.ContactEmail, center.IsActive, 0, 0, center.CreatedAt);
+            center.ContactPhone, center.ContactEmail, center.IsActive, 0, 0, center.CreatedAt, center.RequiresAssignment);
     }
 }

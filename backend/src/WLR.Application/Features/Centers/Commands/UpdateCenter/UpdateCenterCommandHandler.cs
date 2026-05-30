@@ -32,6 +32,6 @@ public class UpdateCenterCommandHandler : IRequestHandler<UpdateCenterCommand, C
             center.ContactPhone, center.ContactEmail, center.IsActive,
             center.Locations.Count,
             center.Locations.SelectMany(l => l.Motors).Count(),
-            center.CreatedAt);
+            center.CreatedAt, center.RequiresAssignment);
     }
 }

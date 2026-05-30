@@ -22,6 +22,6 @@ public class GetCenterByIdQueryHandler : IRequestHandler<GetCenterByIdQuery, Cen
             c.ContactPhone, c.ContactEmail, c.IsActive,
             c.Locations.Count,
             c.Locations.SelectMany(l => l.Motors).Count(),
-            c.CreatedAt);
+            c.CreatedAt, c.RequiresAssignment);
     }
 }

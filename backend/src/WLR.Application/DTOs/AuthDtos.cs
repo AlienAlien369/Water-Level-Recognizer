@@ -1,7 +1,7 @@
 using WLR.Domain.Enums;
 namespace WLR.Application.DTOs;
 
-public record RegisterRequest(string Name, string MobileNumber, string Password, string? Email);
+public record RegisterRequest(string Name, string MobileNumber, string Password, string? Email, Guid? CenterId);
 public record LoginRequest(string MobileNumber, string Password);
 public record RefreshTokenRequest(string RefreshToken);
 

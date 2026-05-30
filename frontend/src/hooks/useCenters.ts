@@ -56,3 +56,16 @@ export function useDeleteCenter() {
     onError: () => toast.error('Failed to delete center'),
   });
 }
+
+export function useToggleCenterAssignment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, requiresAssignment }: { id: string; requiresAssignment: boolean }) =>
+      centersApi.toggleAssignmentMode(id, requiresAssignment),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['centers'] });
+      toast.success(vars.requiresAssignment ? 'Assignment mode enabled.' : 'Open access mode enabled.');
+    },
+    onError: () => toast.error('Failed to update assignment mode'),
+  });
+}

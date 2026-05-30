@@ -31,7 +31,7 @@ public class GetCentersQueryHandler : IRequestHandler<GetCentersQuery, Paginated
                 c.ContactPhone, c.ContactEmail, c.IsActive,
                 c.Locations.Count(l => !l.IsDeleted),
                 c.Locations.Where(l => !l.IsDeleted).SelectMany(l => l.Motors).Count(m => !m.IsDeleted),
-                c.CreatedAt))
+                c.CreatedAt, c.RequiresAssignment))
             .ToListAsync(cancellationToken);
 
         return new PaginatedResult<CenterDto>(items, total, request.Params.PageNumber, request.Params.PageSize);

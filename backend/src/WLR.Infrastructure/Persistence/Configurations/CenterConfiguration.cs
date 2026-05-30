@@ -18,6 +18,7 @@ public class CenterConfiguration : IEntityTypeConfiguration<Center>
         builder.Property(c => c.Country).HasMaxLength(100);
         builder.Property(c => c.ContactPhone).HasMaxLength(20);
         builder.Property(c => c.ContactEmail).HasMaxLength(200);
+        builder.Property(c => c.RequiresAssignment).HasDefaultValue(true);
         builder.HasIndex(c => c.Name);
         builder.HasIndex(c => c.IsActive);
         builder.HasMany(c => c.Locations).WithOne(l => l.Center).HasForeignKey(l => l.CenterId);

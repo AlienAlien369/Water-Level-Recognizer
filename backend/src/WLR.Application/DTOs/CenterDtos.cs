@@ -13,7 +13,8 @@ public record CenterDto(
     bool IsActive,
     int LocationCount,
     int MotorCount,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    bool RequiresAssignment = true
 );
 
 public record CreateCenterRequest(
@@ -37,3 +38,5 @@ public record UpdateCenterRequest(
     string? ContactPhone,
     string? ContactEmail
 );
+
+public record ToggleCenterAssignmentRequest(bool RequiresAssignment);

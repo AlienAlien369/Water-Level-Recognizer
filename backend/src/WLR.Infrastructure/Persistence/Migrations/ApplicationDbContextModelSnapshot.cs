@@ -225,6 +225,10 @@ namespace WLR.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("RequiresAssignment")
+                        .HasDefaultValue(true)
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)

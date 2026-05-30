@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Building2, Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Building2, Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, Users, Unlock } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { useCenters, useCreateCenter, useUpdateCenter, useDeleteCenter } from '@/hooks/useCenters';
+import { useCenters, useCreateCenter, useUpdateCenter, useDeleteCenter, useToggleCenterAssignment } from '@/hooks/useCenters';
 import { UserRole, type Center } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
@@ -32,6 +32,7 @@ export function CentersPage() {
   const createCenter = useCreateCenter();
   const updateCenter = useUpdateCenter();
   const deleteCenter = useDeleteCenter();
+  const toggleAssignment = useToggleCenterAssignment();
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<CenterFormData>();
 
@@ -107,6 +108,7 @@ export function CentersPage() {
               <th className="px-4 py-3 text-center font-semibold text-muted-foreground">Locations</th>
               <th className="px-4 py-3 text-center font-semibold text-muted-foreground">Motors</th>
               <th className="px-4 py-3 text-center font-semibold text-muted-foreground">Status</th>
+              <th className="px-4 py-3 text-center font-semibold text-muted-foreground">Access Mode</th>
               {isSuperAdmin && <th className="px-4 py-3 text-right font-semibold text-muted-foreground">Actions</th>}
             </tr>
           </thead>
@@ -154,6 +156,31 @@ export function CentersPage() {
                       <span className={cn('text-xs px-2 py-1 rounded-full font-medium', center.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600')}>
                         {center.isActive ? 'Active' : 'Inactive'}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {isSuperAdmin ? (
+                        <button
+                          onClick={() => toggleAssignment.mutate({ id: center.id, requiresAssignment: !center.requiresAssignment })}
+                          disabled={toggleAssignment.isPending}
+                          title={center.requiresAssignment ? 'Click to enable open access' : 'Click to require assignments'}
+                          className={cn(
+                            'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all',
+                            center.requiresAssignment
+                              ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                              : 'bg-orange-100 text-orange-800 hover:bg-orange-200'
+                          )}
+                        >
+                          {center.requiresAssignment ? (
+                            <><Users className="w-3 h-3" /> Assigned</>
+                          ) : (
+                            <><Unlock className="w-3 h-3" /> Open</>
+                          )}
+                        </button>
+                      ) : (
+                        <span className={cn('text-xs px-2 py-1 rounded-full font-medium', center.requiresAssignment ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800')}>
+                          {center.requiresAssignment ? 'Assigned' : 'Open'}
+                        </span>
+                      )}
                     </td>
                     {isSuperAdmin && (
                       <td className="px-4 py-3">
@@ -231,6 +258,24 @@ export function CentersPage() {
                   <div className="flex items-center gap-1.5">
                     <span className="w-6 h-6 bg-green-50 text-green-700 rounded-full flex items-center justify-center text-xs font-bold">{center.motorCount}</span>
                     <span className="text-xs text-muted-foreground">Motors</span>
+                  </div>
+                  <div className="ml-auto flex items-center gap-1.5">
+                    {isSuperAdmin ? (
+                      <button
+                        onClick={() => toggleAssignment.mutate({ id: center.id, requiresAssignment: !center.requiresAssignment })}
+                        disabled={toggleAssignment.isPending}
+                        className={cn(
+                          'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all',
+                          center.requiresAssignment ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'
+                        )}
+                      >
+                        {center.requiresAssignment ? <><Users className="w-3 h-3" /> Assigned</> : <><Unlock className="w-3 h-3" /> Open</>}
+                      </button>
+                    ) : (
+                      <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium', center.requiresAssignment ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800')}>
+                        {center.requiresAssignment ? 'Assigned' : 'Open'}
+                      </span>
+                    )}
                   </div>
                 </div>
               </motion.div>
