@@ -24,16 +24,20 @@ services:
           name: wlr-redis
           type: redis
           property: connectionString
-      - key: JWT_SECRET_KEY
+      - key: JwtSettings__SecretKey
         generateValue: true
-      - key: JWT_ISSUER
+      - key: JwtSettings__Issuer
         value: WaterLevelRecognizer
-      - key: JWT_AUDIENCE
+      - key: JwtSettings__Audience
         value: WLRUsers
-      - key: SMS_PROVIDER
+      - key: SmsSettings__Provider
         value: Console
+      - key: AllowedOrigins__0
+        value: https://water-level-recognizer.vercel.app
+      - key: AllowedOrigins__1
+        value: http://localhost:5173
       - key: ALLOWED_ORIGINS
-        sync: false  # Set manually in Render dashboard to your Vercel URL
+        sync: false  # Legacy fallback — set to your Vercel URL if needed
 
   # Redis Cache
   - type: redis

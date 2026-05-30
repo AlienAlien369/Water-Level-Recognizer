@@ -10,6 +10,18 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Fail fast if critical env vars are missing
+var jwtKey = builder.Configuration["JwtSettings:SecretKey"];
+if (string.IsNullOrWhiteSpace(jwtKey))
+    throw new InvalidOperationException(
+        "JwtSettings:SecretKey is not configured. Set env var JwtSettings__SecretKey.");
+
+var pgCs = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(pgCs))
+    throw new InvalidOperationException(
+        "ConnectionStrings:DefaultConnection is not configured. Set env var ConnectionStrings__DefaultConnection.");
+
+
 // Serilog
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -61,11 +73,11 @@ builder.Services.AddRateLimiter(options =>
 });
 
 // Health Checks
-var pgCs = WLR.Infrastructure.ConnectionStringHelper.NormalizePostgres(builder.Configuration.GetConnectionString("DefaultConnection"));
-var redisCs = WLR.Infrastructure.ConnectionStringHelper.NormalizeRedis(builder.Configuration.GetConnectionString("Redis"));
+var pgCsNorm = WLR.Infrastructure.ConnectionStringHelper.NormalizePostgres(builder.Configuration.GetConnectionString("DefaultConnection"));
+var redisCsNorm = WLR.Infrastructure.ConnectionStringHelper.NormalizeRedis(builder.Configuration.GetConnectionString("Redis"));
 builder.Services.AddHealthChecks()
-    .AddNpgSql(pgCs!)
-    .AddRedis(redisCs!);
+    .AddNpgSql(pgCsNorm!)
+    .AddRedis(redisCsNorm!);
 
 var app = builder.Build();
 
