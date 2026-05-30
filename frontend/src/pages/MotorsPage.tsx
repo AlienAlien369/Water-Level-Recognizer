@@ -67,18 +67,18 @@ export function MotorsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Motors</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-foreground">Motors</h1>
           <p className="text-muted-foreground text-sm mt-1">Manage and monitor all water motors</p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => refetch()} className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg text-sm hover:bg-accent transition-colors">
-            <RefreshCw className="w-4 h-4" /> Refresh
+        <div className="flex gap-2 shrink-0">
+          <button onClick={() => refetch()} className="flex items-center gap-1.5 px-3 py-2 border border-border rounded-lg text-sm hover:bg-accent transition-colors">
+            <RefreshCw className="w-4 h-4" /> <span className="hidden sm:inline">Refresh</span>
           </button>
           {canManage && (
-            <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors">
-              <Plus className="w-4 h-4" /> Add Motor
+            <button onClick={openCreate} className="flex items-center gap-1.5 px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors">
+              <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Add Motor</span><span className="sm:hidden">Add</span>
             </button>
           )}
         </div>

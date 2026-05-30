@@ -67,14 +67,14 @@ export function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Users</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-foreground">Users</h1>
           <p className="text-muted-foreground text-sm mt-1">Manage users and their roles</p>
         </div>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
@@ -96,7 +96,8 @@ export function UsersPage() {
         )}
       </div>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+      {/* Desktop table */}
+      <div className="hidden md:block bg-card border border-border rounded-xl overflow-hidden shadow-sm">
         <table className="w-full text-sm">
           <thead className="bg-muted/50 border-b border-border">
             <tr>
@@ -173,6 +174,83 @@ export function UsersPage() {
                 ))}
           </tbody>
         </table>
+        {!isLoading && (!data?.items || data.items.length === 0) && (
+          <div className="text-center py-16">
+            <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground font-medium">No users found</p>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-3">
+        {isLoading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-28 bg-muted rounded-xl animate-pulse" />
+            ))
+          : data?.items?.map(u => (
+              <motion.div
+                key={u.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-card border border-border rounded-xl p-4 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-700 dark:text-blue-300 font-bold text-sm shrink-0">
+                      {u.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-foreground text-sm">{u.name}</p>
+                      <p className="text-xs text-muted-foreground">{u.mobileNumber}</p>
+                      {u.email && <p className="text-xs text-muted-foreground truncate">{u.email}</p>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
+                    <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium', roleBadge(u.role))}>
+                      {roleLabel(u.role)}
+                    </span>
+                    <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium', u.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700')}>
+                      {u.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                </div>
+
+                {(u.centerName || u.lastLoginAt) && (
+                  <div className="mt-2.5 pt-2.5 border-t border-border flex flex-wrap gap-x-4 gap-y-1">
+                    {u.centerName && <p className="text-xs text-muted-foreground">📍 {u.centerName}</p>}
+                    {u.lastLoginAt && <p className="text-xs text-muted-foreground">🕐 {formatDate(u.lastLoginAt)}</p>}
+                  </div>
+                )}
+
+                {isAdmin && (
+                  <div className="mt-2.5 pt-2.5 border-t border-border flex gap-2">
+                    <button onClick={() => openEdit(u)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-accent transition-colors">
+                      <Pencil className="w-3 h-3" /> Edit
+                    </button>
+                    {isSuperAdmin && u.role === UserRole.User && (
+                      <button onClick={() => openPromote(u)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-purple-200 text-purple-700 rounded-lg hover:bg-purple-50 transition-colors">
+                        <ShieldCheck className="w-3 h-3" /> Promote
+                      </button>
+                    )}
+                    {isSuperAdmin && u.role === UserRole.Admin && (
+                      <button onClick={() => demote.mutate(u.id)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-orange-200 text-orange-700 rounded-lg hover:bg-orange-50 transition-colors">
+                        <ShieldOff className="w-3 h-3" /> Demote
+                      </button>
+                    )}
+                    {u.isActive ? (
+                      <button onClick={() => toggleActive.mutate({ id: u.id, activate: false })} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-red-200 text-red-700 rounded-lg hover:bg-red-50 transition-colors ml-auto">
+                        <UserX className="w-3 h-3" /> Deactivate
+                      </button>
+                    ) : (
+                      <button onClick={() => toggleActive.mutate({ id: u.id, activate: true })} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-green-200 text-green-700 rounded-lg hover:bg-green-50 transition-colors ml-auto">
+                        <UserCheck className="w-3 h-3" /> Activate
+                      </button>
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            ))}
         {!isLoading && (!data?.items || data.items.length === 0) && (
           <div className="text-center py-16">
             <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
