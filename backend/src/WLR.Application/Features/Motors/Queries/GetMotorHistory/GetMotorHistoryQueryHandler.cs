@@ -37,10 +37,8 @@ public class GetMotorHistoryQueryHandler : IRequestHandler<GetMotorHistoryQuery,
                 break;
         }
 
-        // Load all logs in range (we need both Open and Close to pair them)
+        // Use IgnoreQueryFilters so soft-deleted motors/locations/centers are still joined
         var q = _context.MotorLogs
-            .Include(l => l.Motor).ThenInclude(m => m!.Location).ThenInclude(loc => loc!.Center)
-            .Include(l => l.OperatedByUser)
             .AsQueryable();
 
         if (start.HasValue)
@@ -50,44 +48,74 @@ public class GetMotorHistoryQueryHandler : IRequestHandler<GetMotorHistoryQuery,
         if (request.MotorId.HasValue)
             q = q.Where(l => l.MotorId == request.MotorId.Value);
         if (request.CenterId.HasValue)
-            q = q.Where(l => l.Motor != null && l.Motor.Location != null && l.Motor.Location.CenterId == request.CenterId.Value);
+        {
+            var motorIds = await _context.Motors
+                .Where(m => m.Location != null && m.Location.CenterId == request.CenterId.Value)
+                .Select(m => m.Id)
+                .ToListAsync(cancellationToken);
+            q = q.Where(l => motorIds.Contains(l.MotorId));
+        }
 
+        // Project to a flat DTO in SQL — avoids global query filter null issues
         var allLogs = await q
             .OrderBy(l => l.MotorId)
             .ThenBy(l => l.ActionTime)
+            .Select(l => new
+            {
+                l.Id,
+                l.MotorId,
+                MotorNumber = l.Motor == null ? "" : l.Motor.MotorNumber,
+                LocationName = l.Motor == null || l.Motor.Location == null ? "" : l.Motor.Location.Name,
+                CenterName = l.Motor == null || l.Motor.Location == null || l.Motor.Location.Center == null
+                    ? "" : l.Motor.Location.Center.Name,
+                l.OperatedByUserId,
+                OperatedByUserName = l.OperatedByUser == null ? "" : l.OperatedByUser.Name,
+                l.Action,
+                l.ActionTime,
+                l.DurationMinutes,
+            })
             .ToListAsync(cancellationToken);
 
-        // Pair Open → Close logs per motor into sessions
+        // Pair Open → Close logs per motor into sessions in-memory
         var sessions = new List<MotorSessionDto>();
-        // track pending opens: motorId → open log
-        var pendingOpens = new Dictionary<Guid, WLR.Domain.Entities.MotorLog>();
+        var pendingOpens = new Dictionary<Guid, (string Id, Guid MotorId, string MotorNumber, string LocationName,
+            string CenterName, Guid OpenedByUserId, string OpenedByUserName, DateTime OpenTime)>();
 
         foreach (var log in allLogs)
         {
             if (log.Action == "Open")
             {
-                // If there was already an unpaired open for this motor, treat it as still-running
+                // Previous open without a close → add as still-running session
                 if (pendingOpens.TryGetValue(log.MotorId, out var prev))
-                    sessions.Add(BuildSession(prev, null));
-
-                pendingOpens[log.MotorId] = log;
-            }
-            else if (log.Action == "Close")
-            {
-                if (pendingOpens.TryGetValue(log.MotorId, out var openLog))
                 {
-                    sessions.Add(BuildSession(openLog, log));
-                    pendingOpens.Remove(log.MotorId);
+                    sessions.Add(new MotorSessionDto(
+                        prev.Id, prev.MotorId, prev.MotorNumber, prev.LocationName, prev.CenterName,
+                        prev.OpenedByUserId, prev.OpenedByUserName, prev.OpenTime,
+                        null, null, true));
                 }
-                // Close without matching open in range — skip
+
+                pendingOpens[log.MotorId] = (log.Id.ToString(), log.MotorId, log.MotorNumber,
+                    log.LocationName, log.CenterName, log.OperatedByUserId, log.OperatedByUserName, log.ActionTime);
+            }
+            else if (log.Action == "Close" && pendingOpens.TryGetValue(log.MotorId, out var openLog))
+            {
+                sessions.Add(new MotorSessionDto(
+                    openLog.Id, openLog.MotorId, openLog.MotorNumber, openLog.LocationName, openLog.CenterName,
+                    openLog.OpenedByUserId, openLog.OpenedByUserName, openLog.OpenTime,
+                    log.ActionTime, log.DurationMinutes, false));
+                pendingOpens.Remove(log.MotorId);
             }
         }
 
-        // Any unpaired opens = still running
-        foreach (var openLog in pendingOpens.Values)
-            sessions.Add(BuildSession(openLog, null));
+        // Remaining opens have no close yet = still running
+        foreach (var p in pendingOpens.Values)
+        {
+            sessions.Add(new MotorSessionDto(
+                p.Id, p.MotorId, p.MotorNumber, p.LocationName, p.CenterName,
+                p.OpenedByUserId, p.OpenedByUserName, p.OpenTime,
+                null, null, true));
+        }
 
-        // Sort newest first, then paginate in-memory
         sessions.Sort((a, b) => b.OpenTime.CompareTo(a.OpenTime));
 
         var total = sessions.Count;
@@ -96,22 +124,5 @@ public class GetMotorHistoryQueryHandler : IRequestHandler<GetMotorHistoryQuery,
         var paged = sessions.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
 
         return new PaginatedResult<MotorSessionDto>(paged, total, pageNumber, pageSize);
-    }
-
-    private static MotorSessionDto BuildSession(WLR.Domain.Entities.MotorLog openLog, WLR.Domain.Entities.MotorLog? closeLog)
-    {
-        return new MotorSessionDto(
-            openLog.Id.ToString(),
-            openLog.MotorId,
-            openLog.Motor?.MotorNumber ?? "",
-            openLog.Motor?.Location?.Name ?? "",
-            openLog.Motor?.Location?.Center?.Name ?? "",
-            openLog.OperatedByUserId,
-            openLog.OperatedByUser?.Name ?? "",
-            openLog.ActionTime,
-            closeLog?.ActionTime,
-            closeLog?.DurationMinutes,
-            closeLog is null
-        );
     }
 }
