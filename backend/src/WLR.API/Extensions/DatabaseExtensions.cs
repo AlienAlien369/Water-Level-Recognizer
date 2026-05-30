@@ -29,11 +29,26 @@ public static class DatabaseExtensions
 
     private static async Task SeedDataAsync(ApplicationDbContext context, ILogger logger)
     {
-        if (await context.Users.AnyAsync(u => u.Role == UserRole.SuperAdmin)) return;
+        var pwService = new PasswordService();
+
+        // Backfill password for existing super admin that has no password hash (pre-password-auth seed)
+        var existingSuperAdmin = await context.Users
+            .FirstOrDefaultAsync(u => u.Role == UserRole.SuperAdmin);
+
+        if (existingSuperAdmin != null)
+        {
+            if (string.IsNullOrEmpty(existingSuperAdmin.PasswordHash))
+            {
+                existingSuperAdmin.SetPassword(pwService.Hash("Admin@1234"));
+                if (!existingSuperAdmin.IsActive) existingSuperAdmin.Activate();
+                await context.SaveChangesAsync();
+                logger.LogWarning("Backfilled password for existing Super Admin (+919999999999 / Admin@1234).");
+            }
+            return;
+        }
 
         logger.LogWarning("Seeding initial data...");
 
-        var pwService = new PasswordService();
         var superAdmin = User.Create("Super Admin", "+919999999999", "admin@wlr.com", UserRole.SuperAdmin);
         superAdmin.SetPassword(pwService.Hash("Admin@1234"));
         superAdmin.Activate();
