@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, Plus, Search, ChevronLeft, ChevronRight, Trash2, XCircle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -49,12 +49,30 @@ export function AssignmentsPage() {
   const revokeAssignment = useRevokeAssignment();
   const deleteAssignment = useDeleteAssignment();
 
-  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<AssignmentFormData>();
+  const { register, handleSubmit, reset, watch, formState: { errors }, setValue } = useForm<AssignmentFormData>();
   const watchedCenterId = watch('centerId');
+  const watchedLocationId = watch('locationId');
 
   const { data: usersData } = useUsers({ pageNumber: 1, pageSize: 100 });
   const { data: locationsData } = useLocations({ pageNumber: 1, pageSize: 100, centerId: watchedCenterId || undefined });
-  const { data: motorsData } = useMotors({ pageNumber: 1, pageSize: 100, locationId: watch('locationId') || undefined });
+  const { data: motorsData } = useMotors({ pageNumber: 1, pageSize: 100, locationId: watchedLocationId || undefined });
+
+  const users = usersData?.items ?? [];
+  const locations = locationsData?.items ?? [];
+  const motors = motorsData?.items ?? [];
+
+  useEffect(() => {
+    if (users.length === 1) setValue('userId', users[0].id);
+  }, [users, setValue]);
+  useEffect(() => {
+    if (centers.length === 1) setValue('centerId', centers[0].id);
+  }, [centers, setValue]);
+  useEffect(() => {
+    if (watchedCenterId && locations.length === 1) setValue('locationId', locations[0].id);
+  }, [locations, watchedCenterId, setValue]);
+  useEffect(() => {
+    if (watchedLocationId && motors.length === 1) setValue('motorId', motors[0].id);
+  }, [motors, watchedLocationId, setValue]);
 
   const onSubmit = async (data: AssignmentFormData) => {
     await createAssignment.mutateAsync({
@@ -223,9 +241,9 @@ export function AssignmentsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Motor (optional)</label>
-                <select {...register('motorId')} className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" disabled={!watch('locationId')}>
+                <select {...register('motorId')} className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" disabled={!watchedLocationId}>
                   <option value="">Select motor...</option>
-                  {motorsData?.items?.map(m => <option key={m.id} value={m.id}>#{m.motorNumber}</option>)}
+                  {motors.map(m => <option key={m.id} value={m.id}>#{m.motorNumber}</option>)}
                 </select>
               </div>
               <div>

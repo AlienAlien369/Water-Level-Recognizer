@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Search, ChevronLeft, ChevronRight, Pencil, UserCheck, UserX, ShieldCheck, ShieldOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -42,6 +42,10 @@ export function UsersPage() {
 
   const profileForm = useForm<{ name: string; email?: string }>({});
   const promoteForm = useForm<{ centerId: string }>({});
+
+  useEffect(() => {
+    if (centers.length === 1) promoteForm.setValue('centerId', centers[0].id);
+  }, [centers]);
 
   const openEdit = (u: User) => {
     setEditingUser(u);

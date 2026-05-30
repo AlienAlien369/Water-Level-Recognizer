@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,10 +20,14 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export function RegisterPage() {
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormData>({ resolver: zodResolver(schema) });
   const registerMutation = useRegister();
   const { data: centersData, isLoading: centersLoading } = useCenters({ pageNumber: 1, pageSize: 100, isActive: true });
   const centers = centersData?.items ?? [];
+
+  useEffect(() => {
+    if (centers.length === 1) setValue('centerId', centers[0].id);
+  }, [centers, setValue]);
 
   const onSubmit = (data: FormData) => {
     registerMutation.mutate({

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -35,7 +35,11 @@ export function LocationsPage() {
   const updateLocation = useUpdateLocation();
   const deleteLocation = useDeleteLocation();
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<LocationFormData>();
+  const { register, handleSubmit, reset, formState: { errors }, setValue } = useForm<LocationFormData>();
+
+  useEffect(() => {
+    if (centers.length === 1) setValue('centerId', centers[0].id);
+  }, [centers, setValue]);
 
   const openCreate = () => {
     setEditingLocation(null);

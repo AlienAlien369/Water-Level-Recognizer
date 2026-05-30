@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Zap, Power, PowerOff, Search, Plus, RefreshCw, Pencil, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -35,7 +35,11 @@ export function MotorsPage() {
 
   const canManage = user?.role === UserRole.Admin || user?.role === UserRole.SuperAdmin;
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<MotorFormData>();
+  const { register, handleSubmit, reset, formState: { errors }, setValue } = useForm<MotorFormData>();
+
+  useEffect(() => {
+    if (locations.length === 1) setValue('locationId', locations[0].id);
+  }, [locations, setValue]);
 
   const openCreate = () => {
     setEditingMotor(null);
