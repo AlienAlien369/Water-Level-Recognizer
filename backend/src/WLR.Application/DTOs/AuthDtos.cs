@@ -1,10 +1,8 @@
 using WLR.Domain.Enums;
 namespace WLR.Application.DTOs;
 
-public record SendOtpRequest(string MobileNumber);
-public record VerifyOtpRequest(string MobileNumber, string OtpCode);
-public record RegisterRequest(string Name, string MobileNumber, string OtpCode, string? Email);
-public record LoginRequest(string MobileNumber, string OtpCode);
+public record RegisterRequest(string Name, string MobileNumber, string Password, string? Email);
+public record LoginRequest(string MobileNumber, string Password);
 public record RefreshTokenRequest(string RefreshToken);
 
 public record AuthResponse(

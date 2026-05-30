@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using WLR.Domain.Entities;
 using WLR.Domain.Enums;
 using WLR.Infrastructure.Persistence;
+using WLR.Infrastructure.Services;
 
 namespace WLR.API.Extensions;
 
@@ -30,9 +31,11 @@ public static class DatabaseExtensions
     {
         if (await context.Users.AnyAsync(u => u.Role == UserRole.SuperAdmin)) return;
 
-        logger.LogInformation("Seeding initial data...");
+        logger.LogWarning("Seeding initial data...");
 
+        var pwService = new PasswordService();
         var superAdmin = User.Create("Super Admin", "+919999999999", "admin@wlr.com", UserRole.SuperAdmin);
+        superAdmin.SetPassword(pwService.Hash("Admin@1234"));
         superAdmin.Activate();
         context.Users.Add(superAdmin);
 
@@ -40,6 +43,6 @@ public static class DatabaseExtensions
         context.Centers.Add(center);
 
         await context.SaveChangesAsync();
-        logger.LogInformation("Seeding completed. Super Admin mobile: +919999999999");
+        logger.LogWarning("Seeding done. Super Admin: +919999999999 / Admin@1234 — CHANGE PASSWORD IN PRODUCTION.");
     }
 }

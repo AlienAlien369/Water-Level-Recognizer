@@ -7,8 +7,6 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   isAuthenticated: boolean;
-  pendingMobile: string | null;
-  setPendingMobile: (mobile: string) => void;
   setAuth: (response: AuthResponse) => void;
   logout: () => void;
   updateUser: (user: User) => void;
@@ -21,9 +19,6 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
-      pendingMobile: null,
-
-      setPendingMobile: (mobile) => set({ pendingMobile: mobile }),
 
       setAuth: (response) =>
         set({
@@ -31,7 +26,6 @@ export const useAuthStore = create<AuthState>()(
           accessToken: response.accessToken,
           refreshToken: response.refreshToken,
           isAuthenticated: true,
-          pendingMobile: null,
         }),
 
       logout: () =>

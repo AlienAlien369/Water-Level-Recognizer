@@ -40,6 +40,7 @@ public static class DependencyInjection
 
         // Services
         services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IPasswordService, PasswordService>();
         services.AddScoped<IOtpService, OtpService>();
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<INotificationService, NotificationService>();

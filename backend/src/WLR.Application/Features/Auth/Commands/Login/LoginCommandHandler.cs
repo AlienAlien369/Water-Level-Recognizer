@@ -12,44 +12,36 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResponse>
 {
     private readonly IApplicationDbContext _context;
     private readonly ITokenService _tokenService;
+    private readonly IPasswordService _passwordService;
     private readonly IAuditService _auditService;
     private readonly ILogger<LoginCommandHandler> _logger;
 
-    public LoginCommandHandler(IApplicationDbContext context, ITokenService tokenService, IAuditService auditService, ILogger<LoginCommandHandler> logger)
+    public LoginCommandHandler(IApplicationDbContext context, ITokenService tokenService, IPasswordService passwordService, IAuditService auditService, ILogger<LoginCommandHandler> logger)
     {
         _context = context;
         _tokenService = tokenService;
+        _passwordService = passwordService;
         _auditService = auditService;
         _logger = logger;
     }
 
     public async Task<AuthResponse> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
-        var otp = await _context.OtpVerifications
-            .Where(o => o.MobileNumber == request.MobileNumber && !o.IsUsed && o.ExpiresAt > DateTime.UtcNow)
-            .OrderByDescending(o => o.CreatedAt)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (otp == null || !otp.IsValid() || otp.OtpCode != request.OtpCode)
-        {
-            otp?.IncrementAttempt();
-            if (otp != null) await _context.SaveChangesAsync(cancellationToken);
-            throw new DomainException("Invalid or expired OTP.");
-        }
-
-        otp.MarkUsed();
-
         var user = await _context.Users
             .FirstOrDefaultAsync(u => u.MobileNumber == request.MobileNumber && !u.IsDeleted, cancellationToken);
 
-        if (user == null)
-        {
-            user = User.Create(request.MobileNumber, request.MobileNumber, null);
-            _context.Users.Add(user);
-        }
+        if (user == null || string.IsNullOrEmpty(user.PasswordHash))
+            throw new DomainException("Invalid mobile number or password.");
 
         if (!user.CanLogin())
             throw new DomainException("Account is locked or inactive. Please contact support.");
+
+        if (!_passwordService.Verify(request.Password, user.PasswordHash))
+        {
+            user.RecordFailedLogin();
+            await _context.SaveChangesAsync(cancellationToken);
+            throw new DomainException("Invalid mobile number or password.");
+        }
 
         user.RecordLogin();
 
@@ -60,7 +52,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResponse>
         _context.UserSessions.Add(session);
 
         await _context.SaveChangesAsync(cancellationToken);
-        await _auditService.LogAsync("Login", "User", user.Id.ToString(), additionalInfo: $"Device: {request.DeviceInfo}, IP: {request.IpAddress}", cancellationToken: cancellationToken);
+        await _auditService.LogAsync("Login", "User", user.Id.ToString(), additionalInfo: $"IP: {request.IpAddress}", cancellationToken: cancellationToken);
 
         return new AuthResponse(
             accessToken,

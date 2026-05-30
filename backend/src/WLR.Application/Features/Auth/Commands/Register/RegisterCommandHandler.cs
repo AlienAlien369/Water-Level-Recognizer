@@ -11,34 +11,27 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthRespo
 {
     private readonly IApplicationDbContext _context;
     private readonly ITokenService _tokenService;
+    private readonly IPasswordService _passwordService;
     private readonly IAuditService _auditService;
 
-    public RegisterCommandHandler(IApplicationDbContext context, ITokenService tokenService, IAuditService auditService)
+    public RegisterCommandHandler(IApplicationDbContext context, ITokenService tokenService, IPasswordService passwordService, IAuditService auditService)
     {
         _context = context;
         _tokenService = tokenService;
+        _passwordService = passwordService;
         _auditService = auditService;
     }
 
     public async Task<AuthResponse> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
-        var existingUser = await _context.Users
+        var exists = await _context.Users
             .AnyAsync(u => u.MobileNumber == request.MobileNumber && !u.IsDeleted, cancellationToken);
 
-        if (existingUser)
-            throw new ConflictException($"User with mobile number {request.MobileNumber} already exists.");
-
-        var otp = await _context.OtpVerifications
-            .Where(o => o.MobileNumber == request.MobileNumber && !o.IsUsed && o.ExpiresAt > DateTime.UtcNow)
-            .OrderByDescending(o => o.CreatedAt)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (otp == null || otp.OtpCode != request.OtpCode)
-            throw new DomainException("Invalid or expired OTP.");
-
-        otp.MarkUsed();
+        if (exists)
+            throw new ConflictException($"A user with mobile number {request.MobileNumber} already exists.");
 
         var user = User.Create(request.Name, request.MobileNumber, request.Email);
+        user.SetPassword(_passwordService.Hash(request.Password));
         _context.Users.Add(user);
 
         var accessToken = _tokenService.GenerateAccessToken(user);

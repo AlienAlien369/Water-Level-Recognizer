@@ -4,7 +4,6 @@ import { ProtectedRoute } from '@/components/shared/ProtectedRoute';
 import { DashboardLayout } from '@/components/shared/DashboardLayout';
 
 import { LoginPage } from '@/pages/LoginPage';
-import { OtpPage } from '@/pages/OtpPage';
 import { RegisterPage } from '@/pages/RegisterPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { CentersPage } from '@/pages/CentersPage';
@@ -25,8 +24,8 @@ export default function App() {
     <Routes>
       {/* Public */}
       <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/dashboard" replace />} />
-      <Route path="/otp" element={<OtpPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/otp" element={<Navigate to="/login" replace />} />
 
       {/* Protected */}
       <Route element={<ProtectedRoute />}>

@@ -4,24 +4,11 @@ import { authApi } from '@/api/auth.api';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 
-export function useSendOtp(options?: { skipRedirect?: boolean }) {
-  const { setPendingMobile } = useAuthStore();
-  const navigate = useNavigate();
-  return useMutation({
-    mutationFn: (mobileNumber: string) => authApi.sendOtp(mobileNumber),
-    onSuccess: (_, mobileNumber) => {
-      setPendingMobile(mobileNumber);
-      toast.success('OTP sent! Check backend logs for the code.');
-      if (!options?.skipRedirect) navigate('/otp');
-    },
-  });
-}
-
 export function useLogin() {
   const { setAuth } = useAuthStore();
   const navigate = useNavigate();
   return useMutation({
-    mutationFn: (data: { mobileNumber: string; otpCode: string }) => authApi.login(data),
+    mutationFn: (data: { mobileNumber: string; password: string }) => authApi.login(data),
     onSuccess: (response) => {
       const data = response.data.data!;
       setAuth(data);
@@ -35,7 +22,7 @@ export function useRegister() {
   const { setAuth } = useAuthStore();
   const navigate = useNavigate();
   return useMutation({
-    mutationFn: (data: { name: string; mobileNumber: string; otpCode: string; email?: string }) =>
+    mutationFn: (data: { name: string; mobileNumber: string; password: string; email?: string }) =>
       authApi.register(data),
     onSuccess: (response) => {
       const data = response.data.data!;
