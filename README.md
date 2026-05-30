@@ -61,12 +61,37 @@ docker logs wlr-backend 2>&1 | Select-String "OTP for"
 docker logs wlr-backend 2>&1 | grep "OTP for"
 ```
 
-### 4. Production Deployment
-```bash
-docker compose --profile production up -d --build
-```
+## Deployment
 
-> **Note:** The `nginx` service only starts with `--profile production`. In development, the frontend (Vite, port 5173) and backend (port 8080) are accessed directly.
+### Frontend → Vercel
+Live at: **https://water-level-recognizer.vercel.app**
+
+Vercel auto-deploys from the `main` branch. Set these in the Vercel dashboard under **Project Settings → Environment Variables**:
+| Variable | Value |
+|---|---|
+| `VITE_API_URL` | Your Render backend URL (e.g. `https://wlr-backend.onrender.com`) |
+| `VITE_SIGNALR_URL` | `https://wlr-backend.onrender.com/hubs` |
+
+### Backend → Render (Docker)
+1. Go to [render.com](https://render.com) → **New → Blueprint**
+2. Connect the GitHub repo `AlienAlien369/Water-Level-Recognizer`
+3. Render will detect `render.yaml` and provision:
+   - `wlr-backend` — ASP.NET Core 9 Docker web service
+   - `wlr-postgres` — PostgreSQL 16 database
+   - `wlr-redis` — Redis cache
+4. Set `ALLOWED_ORIGINS` env var in Render to your Vercel URL after first deploy
+
+### GitHub Actions Secrets Required
+Add these secrets in **GitHub → Settings → Secrets → Actions**:
+
+| Secret | Description |
+|---|---|
+| `VERCEL_TOKEN` | Your Vercel API token |
+| `RENDER_DEPLOY_HOOK_URL` | Render deploy hook URL (from service Settings) |
+
+---
+
+
 
 ## Default Credentials
 
