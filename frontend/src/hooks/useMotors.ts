@@ -3,7 +3,7 @@ import { motorsApi } from '@/api/motors.api';
 import type { QueryParams } from '@/types';
 import toast from 'react-hot-toast';
 
-export function useMotors(params?: QueryParams & { locationId?: string }) {
+export function useMotors(params?: QueryParams & { locationId?: string; minRunningHours?: number }) {
   return useQuery({
     queryKey: ['motors', params],
     queryFn: () => motorsApi.getAll(params),
@@ -89,6 +89,9 @@ export function useMotorHistory(params?: {
   endDate?: string;
   motorId?: string;
   centerId?: string;
+  locationId?: string;
+  motorSearch?: string;
+  minDurationHours?: number;
 }) {
   return useQuery({
     queryKey: ['motor-history', params],

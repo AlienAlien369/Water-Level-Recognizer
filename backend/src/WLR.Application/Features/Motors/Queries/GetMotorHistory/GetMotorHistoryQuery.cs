@@ -11,5 +11,8 @@ public record GetMotorHistoryQuery(
     DateTime? StartDate,
     DateTime? EndDate,
     Guid? MotorId,
-    Guid? CenterId
+    Guid? CenterId,
+    Guid? LocationId,
+    string? MotorSearch,
+    double? MinDurationHours
 ) : IRequest<PaginatedResult<MotorSessionDto>>;

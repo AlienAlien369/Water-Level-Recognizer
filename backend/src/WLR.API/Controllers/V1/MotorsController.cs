@@ -18,9 +18,9 @@ public class MotorsController : BaseController
 {
     [HttpGet]
     [ProducesResponseType(typeof(ApiResponse<PaginatedResult<MotorDto>>), 200)]
-    public async Task<IActionResult> GetAll([FromQuery] QueryParams query, [FromQuery] Guid? locationId, [FromQuery] Guid? centerId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAll([FromQuery] QueryParams query, [FromQuery] Guid? locationId, [FromQuery] Guid? centerId, [FromQuery] double? minRunningHours, CancellationToken cancellationToken)
     {
-        var result = await Mediator.Send(new GetMotorsQuery(query, locationId, centerId), cancellationToken);
+        var result = await Mediator.Send(new GetMotorsQuery(query, locationId, centerId, minRunningHours), cancellationToken);
         return Ok(ApiResponse<PaginatedResult<MotorDto>>.Ok(result));
     }
 
@@ -82,7 +82,7 @@ public class MotorsController : BaseController
     }
 
     [HttpGet("history")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
+    [Authorize]  // All roles; handler auto-scopes User to their center
     [ProducesResponseType(typeof(ApiResponse<PaginatedResult<MotorSessionDto>>), 200)]
     public async Task<IActionResult> GetHistory(
         [FromQuery] int pageNumber = 1,
@@ -92,9 +92,12 @@ public class MotorsController : BaseController
         [FromQuery] DateTime? endDate = null,
         [FromQuery] Guid? motorId = null,
         [FromQuery] Guid? centerId = null,
+        [FromQuery] Guid? locationId = null,
+        [FromQuery] string? motorSearch = null,
+        [FromQuery] double? minDurationHours = null,
         CancellationToken cancellationToken = default)
     {
-        var queryCmd = new GetMotorHistoryQuery(pageNumber, pageSize, dateFilter, startDate, endDate, motorId, centerId);
+        var queryCmd = new GetMotorHistoryQuery(pageNumber, pageSize, dateFilter, startDate, endDate, motorId, centerId, locationId, motorSearch, minDurationHours);
         var result = await Mediator.Send(queryCmd, cancellationToken);
         return Ok(ApiResponse<PaginatedResult<MotorSessionDto>>.Ok(result));
     }

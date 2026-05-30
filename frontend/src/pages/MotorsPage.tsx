@@ -17,13 +17,20 @@ interface MotorFormData {
 
 export function MotorsPage() {
   const [search, setSearch] = useState('');
+  const [locationFilter, setLocationFilter] = useState('');
+  const [minHoursInput, setMinHoursInput] = useState('');
+  const [appliedMinHours, setAppliedMinHours] = useState<number | undefined>(undefined);
   const [page, setPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [editingMotor, setEditingMotor] = useState<Motor | null>(null);
   const [deletingMotor, setDeletingMotor] = useState<Motor | null>(null);
   const { user } = useAuthStore();
 
-  const { data, isLoading, refetch } = useMotors({ pageNumber: page, pageSize: 20, search });
+  const { data, isLoading, refetch } = useMotors({
+    pageNumber: page, pageSize: 20, search,
+    locationId: locationFilter || undefined,
+    minRunningHours: appliedMinHours,
+  });
   const { data: locationsData } = useLocations({ pageNumber: 1, pageSize: 100 });
   const locations = locationsData?.items ?? [];
 
@@ -40,6 +47,18 @@ export function MotorsPage() {
   useEffect(() => {
     if (locations.length === 1) setValue('locationId', locations[0].id);
   }, [locations, setValue]);
+
+  const applyHoursFilter = () => {
+    const v = parseFloat(minHoursInput);
+    setAppliedMinHours(isNaN(v) || v <= 0 ? undefined : v);
+    setPage(1);
+  };
+
+  const clearHoursFilter = () => {
+    setMinHoursInput('');
+    setAppliedMinHours(undefined);
+    setPage(1);
+  };
 
   const openCreate = () => {
     setEditingMotor(null);
@@ -96,6 +115,64 @@ export function MotorsPage() {
           placeholder="Search motors by number, location..."
           className="w-full pl-10 pr-4 py-2.5 border border-border rounded-xl bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
         />
+      </div>
+
+      {/* Filters row */}
+      <div className="flex flex-wrap gap-3 items-end">
+        {/* Location filter */}
+        <div className="flex flex-col gap-1 min-w-[160px]">
+          <label className="text-xs font-medium text-muted-foreground">Location</label>
+          <select
+            value={locationFilter}
+            onChange={e => { setLocationFilter(e.target.value); setPage(1); }}
+            className="px-3 py-2 border border-border rounded-lg bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">All Locations</option>
+            {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+          </select>
+        </div>
+
+        {/* Min running hours filter */}
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">Run more than (hours)</label>
+          <div className="flex gap-1.5">
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              value={minHoursInput}
+              onChange={e => setMinHoursInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && applyHoursFilter()}
+              placeholder="e.g. 20"
+              className="w-28 px-3 py-2 border border-border rounded-lg bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              onClick={applyHoursFilter}
+              className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
+            >Apply</button>
+            {appliedMinHours && (
+              <button onClick={clearHoursFilter} className="px-3 py-2 border border-border rounded-lg text-sm hover:bg-accent transition-colors">✕</button>
+            )}
+          </div>
+        </div>
+
+        {/* Active filter chips */}
+        {(locationFilter || appliedMinHours) && (
+          <div className="flex flex-wrap gap-1.5 items-center self-end pb-0.5">
+            {locationFilter && (
+              <span className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 px-2 py-1 rounded-full">
+                📍 {locations.find(l => l.id === locationFilter)?.name}
+                <button onClick={() => { setLocationFilter(''); setPage(1); }} className="ml-0.5 hover:text-blue-900">✕</button>
+              </span>
+            )}
+            {appliedMinHours && (
+              <span className="inline-flex items-center gap-1 text-xs bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300 px-2 py-1 rounded-full">
+                ⏱ &gt;{appliedMinHours}h run time
+                <button onClick={clearHoursFilter} className="ml-0.5 hover:text-orange-900">✕</button>
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {isLoading ? (

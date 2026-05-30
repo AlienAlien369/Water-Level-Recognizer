@@ -2,7 +2,7 @@ import api from './axiosInstance';
 import type { ApiResponse, Motor, MotorLog, MotorSession, PaginatedResult, QueryParams } from '@/types';
 
 export const motorsApi = {
-  getAll: (params?: QueryParams & { locationId?: string; centerId?: string; status?: number; state?: number }) =>
+  getAll: (params?: QueryParams & { locationId?: string; centerId?: string; status?: number; state?: number; minRunningHours?: number }) =>
     api.get<ApiResponse<PaginatedResult<Motor>>>('/motors', { params }),
 
   getById: (id: string) =>
@@ -31,6 +31,9 @@ export const motorsApi = {
     endDate?: string;
     motorId?: string;
     centerId?: string;
+    locationId?: string;
+    motorSearch?: string;
+    minDurationHours?: number;
   }) =>
     api.get<ApiResponse<PaginatedResult<MotorSession>>>('/motors/history', { params }),
 

@@ -28,6 +28,9 @@ public class GetMotorsQueryHandler : IRequestHandler<GetMotorsQuery, PaginatedRe
         if (request.Params.IsActive.HasValue)
             q = q.Where(m => m.IsActive == request.Params.IsActive.Value);
 
+        if (request.MinRunningHours.HasValue)
+            q = q.Where(m => m.TotalRunningMinutes >= request.MinRunningHours.Value * 60);
+
         var total = await q.CountAsync(cancellationToken);
 
         var items = await q

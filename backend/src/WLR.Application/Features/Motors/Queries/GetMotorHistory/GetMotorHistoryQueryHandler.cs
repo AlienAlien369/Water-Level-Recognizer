@@ -9,7 +9,12 @@ namespace WLR.Application.Features.Motors.Queries.GetMotorHistory;
 public class GetMotorHistoryQueryHandler : IRequestHandler<GetMotorHistoryQuery, PaginatedResult<MotorSessionDto>>
 {
     private readonly IApplicationDbContext _context;
-    public GetMotorHistoryQueryHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICurrentUser _currentUser;
+    public GetMotorHistoryQueryHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    {
+        _context = context;
+        _currentUser = currentUser;
+    }
 
     public async Task<PaginatedResult<MotorSessionDto>> Handle(GetMotorHistoryQuery request, CancellationToken cancellationToken)
     {
@@ -47,10 +52,27 @@ public class GetMotorHistoryQueryHandler : IRequestHandler<GetMotorHistoryQuery,
             q = q.Where(l => l.ActionTime <= end.Value);
         if (request.MotorId.HasValue)
             q = q.Where(l => l.MotorId == request.MotorId.Value);
-        if (request.CenterId.HasValue)
+
+        // Resolve effective centerId: User role is always scoped to their center
+        var effectiveCenterId = request.CenterId
+            ?? (_currentUser.IsAdmin || _currentUser.IsSuperAdmin ? null : _currentUser.CenterId);
+
+        if (effectiveCenterId.HasValue || request.LocationId.HasValue)
+        {
+            var motorQuery = _context.Motors.AsQueryable();
+            if (effectiveCenterId.HasValue)
+                motorQuery = motorQuery.Where(m => m.Location != null && m.Location.CenterId == effectiveCenterId.Value);
+            if (request.LocationId.HasValue)
+                motorQuery = motorQuery.Where(m => m.LocationId == request.LocationId.Value);
+            if (!string.IsNullOrWhiteSpace(request.MotorSearch))
+                motorQuery = motorQuery.Where(m => m.MotorNumber.Contains(request.MotorSearch));
+            var motorIds = await motorQuery.Select(m => m.Id).ToListAsync(cancellationToken);
+            q = q.Where(l => motorIds.Contains(l.MotorId));
+        }
+        else if (!string.IsNullOrWhiteSpace(request.MotorSearch))
         {
             var motorIds = await _context.Motors
-                .Where(m => m.Location != null && m.Location.CenterId == request.CenterId.Value)
+                .Where(m => m.MotorNumber.Contains(request.MotorSearch))
                 .Select(m => m.Id)
                 .ToListAsync(cancellationToken);
             q = q.Where(l => motorIds.Contains(l.MotorId));
@@ -117,6 +139,13 @@ public class GetMotorHistoryQueryHandler : IRequestHandler<GetMotorHistoryQuery,
         }
 
         sessions.Sort((a, b) => b.OpenTime.CompareTo(a.OpenTime));
+
+        // Apply min duration filter after pairing (in-memory)
+        if (request.MinDurationHours.HasValue && request.MinDurationHours.Value > 0)
+        {
+            var minMinutes = request.MinDurationHours.Value * 60;
+            sessions = sessions.Where(s => s.DurationMinutes.HasValue && s.DurationMinutes.Value >= minMinutes).ToList();
+        }
 
         var total = sessions.Count;
         var pageSize = request.PageSize > 0 ? request.PageSize : 20;

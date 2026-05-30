@@ -3,17 +3,27 @@ using Microsoft.EntityFrameworkCore;
 using WLR.Application.Common.Interfaces;
 using WLR.Application.Common.Models;
 using WLR.Application.DTOs;
+using WLR.Domain.Enums;
 namespace WLR.Application.Features.Users.Queries.GetUsers;
 
 public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, PaginatedResult<UserDto>>
 {
     private readonly IApplicationDbContext _context;
-    public GetUsersQueryHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICurrentUser _currentUser;
+    public GetUsersQueryHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    {
+        _context = context;
+        _currentUser = currentUser;
+    }
 
     public async Task<PaginatedResult<UserDto>> Handle(GetUsersQuery request, CancellationToken cancellationToken)
     {
         // Global query filter already applies !IsDeleted
         var q = _context.Users.AsQueryable();
+
+        // Admins cannot see SuperAdmin accounts
+        if (!_currentUser.IsSuperAdmin)
+            q = q.Where(u => u.Role != UserRole.SuperAdmin);
 
         if (request.CenterId.HasValue)
             q = q.Where(u => u.CenterId == request.CenterId.Value);
